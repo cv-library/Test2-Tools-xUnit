@@ -142,10 +142,10 @@ sub handle_attributes {
             $method = 'add_teardown';
             $options{scaffold} = 1;
         }
-        elsif ( $attr =~ m/^Skip(?:\((.+)\))?/i ) {
+        elsif ( $attr =~ m/^Skip(?:\((.+)\))?/ ) {
             $options{skip} = $1 || $name;
         }
-        elsif ( $attr =~ m/^Todo(?:\((.+)\))?/i ) {
+        elsif ( $attr =~ m/^Todo(?:\((.+)\))?/ ) {
             $options{todo} = $1 || $name;
         }
         else {

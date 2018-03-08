@@ -29,9 +29,9 @@ sub hello_again_world_skip_with_reason : Test Skip(A Good Reason) {
     ok( 1, "pass again" );
 }
 
-sub hello_again_world_todo : Test TODO {
-    ok( 1, "pass" );
-    ok( 1, "pass again" );
+sub hello_again_world_todo : Test Todo(Not done yet) {
+    ok( 0, "fail" );
+    ok( 1, "unexpected pass" );
 }
 
 done_testing();
