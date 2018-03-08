@@ -4,93 +4,77 @@ use strict;
 use warnings;
 
 use B;
-use Carp qw/croak/;
-use Test2::Workflow qw/current_build init_root root_build/;
+use Test2::Workflow;
 use Test2::Workflow::Runner;
 use Test2::Workflow::Task::Action;
 
 sub import {
-    my $class  = shift;
     my @caller = caller;
 
-    my $root = init_root(
+    my $root = Test2::Workflow::init_root(
         $caller[0],
+        code  => sub {},
         frame => \@caller,
-        code  => sub {1},
     );
 
-    my $runner = Test2::Workflow::Runner->new();
+    Test2::API::test2_stack->top->follow_up(
+        sub { Test2::Workflow::Runner->new( task => $root->compile )->run } );
 
-    my $stack = Test2::API::test2_stack;
-    $stack->top;    # Insure we have a hub
-    my ($hub) = Test2::API::test2_stack->all;
-    $hub->set_active(1);
-    $hub->follow_up(
-        sub {
-            return unless $root->populated;
-            my $g = $root->compile;
-            $runner->push_task($g);
-            $runner->run;
+    my $modify_code_attributes = sub {
+        my ( undef, $code, @attrs ) = @_;
+
+        my $name = B::svref_2object($code)->GV->NAME;
+
+        my ( $method, %options, @unhandled );
+
+        for (@attrs) {
+            if ( $_ eq 'Test' ) {
+                $method = 'add_primary';
+            }
+            elsif ( $_ eq 'BeforeEach' ) {
+                $method = 'add_primary_setup';
+                $options{scaffold} = 1;
+            }
+            elsif ( $_ eq 'AfterEach' ) {
+                $method = 'add_primary_teardown';
+                $options{scaffold} = 1;
+            }
+            elsif ( $_ eq 'BeforeAll' ) {
+                $method = 'add_setup';
+                $options{scaffold} = 1;
+            }
+            elsif ( $_ eq 'AfterAll' ) {
+                $method = 'add_teardown';
+                $options{scaffold} = 1;
+            }
+            elsif ( /^Skip(?:\((.+)\))?/ ) {
+                $options{skip} = $1 || $name;
+            }
+            elsif ( /^Todo(?:\((.+)\))?/ ) {
+                $options{todo} = $1 || $name;
+            }
+            else {
+                push @unhandled, $_;
+            }
         }
-    );
+
+        if ($method) {
+            my $task = Test2::Workflow::Task::Action->new(
+                code  => $code,
+                frame => \@caller,
+                name  => $name,
+                %options,
+            );
+
+            $root->$method($task);
+        }
+
+        return @unhandled;
+    };
 
     no strict 'refs';
-    *{"$caller[0]::MODIFY_CODE_ATTRIBUTES"} = \&handle_attributes;
-}
 
-# This gets exported into the caller's namespace as MODIFY_CODE_ATTRIBUTES.
-sub handle_attributes {
-    my ( $pkg, $code, @attrs, @unhandled ) = @_;
-
-    my $name = B::svref_2object($code)->GV->NAME;
-    my ( $method, %options );
-
-    for (@attrs) {
-        if ( $_ eq 'Test' ) {
-            $method = 'add_primary';
-        }
-        elsif ( $_ eq 'BeforeEach' ) {
-            $method = 'add_primary_setup';
-            $options{scaffold} = 1;
-        }
-        elsif ( $_ eq 'AfterEach' ) {
-            $method = 'add_primary_teardown';
-            $options{scaffold} = 1;
-        }
-        elsif ( $_ eq 'BeforeAll' ) {
-            $method = 'add_setup';
-            $options{scaffold} = 1;
-        }
-        elsif ( $_ eq 'AfterAll' ) {
-            $method = 'add_teardown';
-            $options{scaffold} = 1;
-        }
-        elsif ( /^Skip(?:\((.+)\))?/ ) {
-            $options{skip} = $1 || $name;
-        }
-        elsif ( /^Todo(?:\((.+)\))?/ ) {
-            $options{todo} = $1 || $name;
-        }
-        else {
-            push @unhandled, $_;
-        }
-    }
-
-    if ($method) {
-        my $task = Test2::Workflow::Task::Action->new(
-            code  => $code,
-            frame => [ caller 1 ],
-            name  => $name,
-            %options,
-        );
-
-        my $current = current_build() || root_build($pkg)
-            or croak 'No current workflow build!';
-
-        $current->$method($task);
-    }
-
-    return @unhandled;
+    *{"$caller[0]::MODIFY_CODE_ATTRIBUTES"} = $modify_code_attributes;
 }
 
 1;
