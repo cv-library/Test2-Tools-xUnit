@@ -3,10 +3,9 @@ package Test2::Tools::xUnit;
 use strict;
 use warnings;
 
-use Attribute::Handlers;
-use Importer ();
-
+use B;
 use Carp qw/croak/;
+use Importer ();
 use Test2::Workflow
     qw/parse_args build current_build root_build init_root build_stack/;
 use Test2::Workflow::Runner();
@@ -21,6 +20,9 @@ my %HANDLED;
 sub import {
     my $class  = shift;
     my @caller = caller(0);
+
+    no strict 'refs';
+    *{ $caller[0] . '::MODIFY_CODE_ATTRIBUTES' } = \&handle_attributes;
 
     my %root_args;
     my %runner_args;
@@ -113,92 +115,61 @@ sub import {
     Importer->import_into( $class, $caller[0], @import );
 }
 
-sub UNIVERSAL::Test : ATTR(CODE) {
-    my ($package, $symbol, $referent, $attr,
-        $data,    $phase,  $filename, $linenum
-    ) = @_;
-    my $action = Test2::Workflow::Task::Action->new(
-        code  => $referent,
-        frame => [ $package, $filename, $linenum ],
-        name  => *{$symbol}{NAME},
-    );
+# This gets exported into the caller's namespace as MODIFY_CODE_ATTRIBUTES.
+sub handle_attributes {
+    my ( $pkg, $code, @attrs, @unhandled ) = @_;
 
-    my $current = current_build() || root_build($package)
-        or croak "No current workflow build!";
+    my ( $method, %options );
 
-    $current->add_primary($action);
-}
+    for my $attr (@attrs) {
+        if ( $attr eq 'Test' ) {
+            $method = 'add_primary';
+        }
+        elsif ( $attr eq 'BeforeEach' ) {
+            $method = 'add_primary_setup';
+            $options{scaffold} = 1;
+        }
+        elsif ( $attr eq 'AfterEach' ) {
+            $method = 'add_primary_teardown';
+            $options{scaffold} = 1;
+        }
+        elsif ( $attr eq 'BeforeAll' ) {
+            $method = 'add_setup';
+            $options{scaffold} = 1;
+        }
+        elsif ( $attr eq 'AfterAll' ) {
+            $method = 'add_teardown';
+            $options{scaffold} = 1;
+        }
+        elsif ( $attr eq 'Disabled' ) {
+            $options{skip} = 1;
+        }
+        elsif ( $attr eq 'TODO' ) {
+            $options{todo} = 1;
+        }
+        else {
+            push @unhandled, $attr;
+        }
+    }
 
-sub UNIVERSAL::BeforeAll : ATTR(CODE) {
-    my ($package, $symbol, $referent, $attr,
-        $data,    $phase,  $filename, $linenum
-    ) = @_;
-    my $action = Test2::Workflow::Task::Action->new(
-        code     => $referent,
-        frame    => [ $package, $filename, $linenum ],
-        name     => *{$symbol}{NAME},
-        scaffold => 1,
-    );
+    if ($method) {
+        my ( undef, $filename, $linenum ) = caller 2;
+        my $name = B::svref_2object($code)->GV->NAME;
 
-    my $current = current_build() || root_build($package)
-        or croak "No current workflow build!";
+        my $task = Test2::Workflow::Task::Action->new(
+            code  => $code,
+            frame => [ $pkg, $filename, $linenum ],
+            name  => $name,
+            %options,
+        );
 
-    $current->add_setup($action);
-}
+        my $current = current_build() || root_build($pkg)
+            or croak "No current workflow build!";
 
-sub UNIVERSAL::AfterAll : ATTR(CODE) {
-    my ($package, $symbol, $referent, $attr,
-        $data,    $phase,  $filename, $linenum
-    ) = @_;
-    my $action = Test2::Workflow::Task::Action->new(
-        code     => $referent,
-        frame    => [ $package, $filename, $linenum ],
-        name     => *{$symbol}{NAME},
-        scaffold => 1,
-    );
+        $current->$method($task);
+    }
 
-    my $current = current_build() || root_build($package)
-        or croak "No current workflow build!";
-
-    $current->add_teardown($action);
-}
-
-sub UNIVERSAL::BeforeEach : ATTR(CODE) {
-    my ($package, $symbol, $referent, $attr,
-        $data,    $phase,  $filename, $linenum
-    ) = @_;
-    my $action = Test2::Workflow::Task::Action->new(
-        code     => $referent,
-        frame    => [ $package, $filename, $linenum ],
-        name     => *{$symbol}{NAME},
-        scaffold => 1,
-    );
-
-    my $current = current_build() || root_build($package)
-        or croak "No current workflow build!";
-
-    $current->add_primary_setup($action);
-}
-
-sub UNIVERSAL::AfterEach : ATTR(CODE) {
-    my ($package, $symbol, $referent, $attr,
-        $data,    $phase,  $filename, $linenum
-    ) = @_;
-    my $action = Test2::Workflow::Task::Action->new(
-        code     => $referent,
-        frame    => [ $package, $filename, $linenum ],
-        name     => *{$symbol}{NAME},
-        scaffold => 1,
-    );
-
-    my $current = current_build() || root_build($package)
-        or croak "No current workflow build!";
-
-    $current->add_primary_teardown($action);
-}
-
-sub UNIVERSAL::Disabled : ATTR(CODE) {
-
+    return @unhandled;
 }
 
 1;

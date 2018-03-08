@@ -19,9 +19,14 @@ sub hello_world : Test {
     ok(1);
 }
 
-sub hello_again_world : Test(7) Disabled("sucks") {
+sub hello_again_world : Test Disabled {
     ok( 1, "pass" );
     ok( 1, "pass again" );
+}
+
+sub hello_again_world_todo : Test TODO {
+    ok( 0, "pass" );
+    ok( 0, "pass again" );
 }
 
 done_testing();
