@@ -119,6 +119,7 @@ sub import {
 sub handle_attributes {
     my ( $pkg, $code, @attrs, @unhandled ) = @_;
 
+    my $name = B::svref_2object($code)->GV->NAME;
     my ( $method, %options );
 
     for my $attr (@attrs) {
@@ -141,11 +142,11 @@ sub handle_attributes {
             $method = 'add_teardown';
             $options{scaffold} = 1;
         }
-        elsif ( $attr eq 'Disabled' ) {
-            $options{skip} = 1;
+        elsif ( $attr =~ m/^Skip(?:\((.+)\))?/i ) {
+            $options{skip} = $1 || $name;
         }
-        elsif ( $attr eq 'TODO' ) {
-            $options{todo} = 1;
+        elsif ( $attr =~ m/^Todo(?:\((.+)\))?/i ) {
+            $options{todo} = $1 || $name;
         }
         else {
             push @unhandled, $attr;
@@ -154,7 +155,6 @@ sub handle_attributes {
 
     if ($method) {
         my ( undef, $filename, $linenum ) = caller 2;
-        my $name = B::svref_2object($code)->GV->NAME;
 
         my $task = Test2::Workflow::Task::Action->new(
             code  => $code,

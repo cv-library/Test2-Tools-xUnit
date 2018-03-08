@@ -19,14 +19,19 @@ sub hello_world : Test {
     ok(1);
 }
 
-sub hello_again_world : Test Disabled {
+sub hello_again_world : Test Skip {
+    ok( 1, "pass" );
+    ok( 1, "pass again" );
+}
+
+sub hello_again_world_skip_with_reason : Test Skip(A Good Reason) {
     ok( 1, "pass" );
     ok( 1, "pass again" );
 }
 
 sub hello_again_world_todo : Test TODO {
-    ok( 0, "pass" );
-    ok( 0, "pass again" );
+    ok( 1, "pass" );
+    ok( 1, "pass again" );
 }
 
 done_testing();
