@@ -129,23 +129,7 @@ sub UNIVERSAL::Test : ATTR(CODE) {
     $current->add_primary($action);
 }
 
-sub UNIVERSAL::Tests : ATTR(CODE) {
-    my ($package, $symbol, $referent, $attr,
-        $data,    $phase,  $filename, $linenum
-    ) = @_;
-    my $action = Test2::Workflow::Task::Action->new(
-        code  => $referent,
-        frame => [ $package, $filename, $linenum ],
-        name  => *{$symbol}{NAME},
-    );
-
-    my $current = current_build() || root_build($package)
-        or croak "No current workflow build!";
-
-    $current->add_primary($action);
-}
-
-sub UNIVERSAL::Startup : ATTR(CODE) {
+sub UNIVERSAL::BeforeAll : ATTR(CODE) {
     my ($package, $symbol, $referent, $attr,
         $data,    $phase,  $filename, $linenum
     ) = @_;
@@ -162,7 +146,7 @@ sub UNIVERSAL::Startup : ATTR(CODE) {
     $current->add_setup($action);
 }
 
-sub UNIVERSAL::Shutdown : ATTR(CODE) {
+sub UNIVERSAL::AfterAll : ATTR(CODE) {
     my ($package, $symbol, $referent, $attr,
         $data,    $phase,  $filename, $linenum
     ) = @_;
@@ -179,7 +163,7 @@ sub UNIVERSAL::Shutdown : ATTR(CODE) {
     $current->add_teardown($action);
 }
 
-sub UNIVERSAL::Setup : ATTR(CODE) {
+sub UNIVERSAL::BeforeEach : ATTR(CODE) {
     my ($package, $symbol, $referent, $attr,
         $data,    $phase,  $filename, $linenum
     ) = @_;
@@ -196,7 +180,7 @@ sub UNIVERSAL::Setup : ATTR(CODE) {
     $current->add_primary_setup($action);
 }
 
-sub UNIVERSAL::Teardown : ATTR(CODE) {
+sub UNIVERSAL::AfterEach : ATTR(CODE) {
     my ($package, $symbol, $referent, $attr,
         $data,    $phase,  $filename, $linenum
     ) = @_;
@@ -211,6 +195,10 @@ sub UNIVERSAL::Teardown : ATTR(CODE) {
         or croak "No current workflow build!";
 
     $current->add_primary_teardown($action);
+}
+
+sub UNIVERSAL::Disabled : ATTR(CODE) {
+
 }
 
 1;

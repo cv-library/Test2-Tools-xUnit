@@ -1,25 +1,25 @@
 use Test2::Tools::xUnit;
 use Test2::V0;
 
-sub startup : Startup {
+sub startup : BeforeAll {
 }
 
-sub shutdown : Shutdown {
-
-}
-
-sub setup : Setup {
+sub shutdown : AfterAll {
 
 }
 
-sub teardown : Teardown {
+sub setup : BeforeEach {
+
+}
+
+sub teardown : AfterEach {
 }
 
 sub hello_world : Test {
     ok(1);
 }
 
-sub hello_again_world : Tests {
+sub hello_again_world : Test(7) Disabled("sucks") {
     ok( 1, "pass" );
     ok( 1, "pass again" );
 }
