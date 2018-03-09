@@ -24,7 +24,9 @@ sub import {
         Test2::Workflow::Task::Action->new(
             code => sub {
                 shift->{xUnit}
-                    = $caller[0]->can('new') ? $caller[0]->new : $caller[0];
+                    = $caller[0]->can('new')
+                    ? $caller[0]->new
+                    : bless {}, $caller[0];
             },
             name     => 'object_construction',
             frame    => \@caller,
