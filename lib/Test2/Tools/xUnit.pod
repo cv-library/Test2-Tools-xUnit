@@ -1,0 +1,76 @@
+=encoding UTF-8
+
+=head1 NAME
+
+Test2::Tools::xUnit - Perl xUnit framework built on Test2::Workflow
+
+=for html
+<a href=https://travis-ci.org/cv-library/Test2-Tools-xUnit>
+    <img src=https://api.travis-ci.org/cv-library/Test2-Tools-xUnit.svg>
+</a>
+<a href=https://coveralls.io/r/cv-library/Test2-Tools-xUnit>
+    <img src=https://coveralls.io/repos/cv-library/Test2-Tools-xUnit/badge.svg>
+</a>
+<a href=https://metacpan.org/pod/Test2::Tools::xUnit>
+    <img src=https://badge.fury.io/pl/Test2-Tools-xUnit.svg>
+</a>
+<a href=https://github.com/cv-library/Test2-Tools-xUnit/issues>
+    <img src=https://img.shields.io/github/issues/cv-library/Test2-Tools-xUnit.svg>
+</a>
+
+=head1 SYNOPSIS
+
+ use Test2::Tools::xUnit;
+ use Test2::V0;
+
+ # BeforeAll/AfterAll are called once, as class methods.
+ my $dbh;
+
+ sub startup : BeforeAll {
+    $dbh = DBI->connect(...);
+ }
+
+ sub shutdown : AfterAll {
+    $dbh->disconnect;
+ }
+
+ # BeforeEach/AfterEach are called once per test method, on an instance.
+ sub setup : BeforeEach {
+    my $self = shift;
+ }
+
+ sub teardown : AfterEach {
+    my $self = shift;
+ }
+
+ # Tests are indicated with the :Test attribute.  You can make multiple
+ # assertions per test if desired.  Each method is called on a new instance.
+ sub test : Test {
+    my $self = shift;
+
+ }
+
+ # Skip tests if you don't want them to be run.
+ sub skipped_test : Test Skip {
+    my $self = shift;
+
+ }
+
+ # Todo tests will be run; failures are reported and ignored.
+ sub todo_test : Test Todo {
+    my $self = shift;
+
+ }
+
+ done_testing;
+
+=head1 DESCRIPTION
+
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright © 2018 CV-Library Ltd.
+
+This is free software; you can redistribute it and/or modify it under the
+same terms as Perl itself.
+
