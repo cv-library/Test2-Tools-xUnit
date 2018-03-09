@@ -13,21 +13,31 @@ sub import {
 
     my $root = Test2::Workflow::init_root(
         $caller[0],
-        code  => sub {},
+        code  => sub { },
         frame => \@caller,
     );
 
     Test2::API::test2_stack->top->follow_up(
         sub { Test2::Workflow::Runner->new( task => $root->compile )->run } );
 
-    my $self = bless {}, $caller[0];
+    $root->add_primary_setup(
+        Test2::Workflow::Task::Action->new(
+            code => sub {
+                shift->{xUnit}
+                    = $caller[0]->can('new') ? $caller[0]->new : $caller[0];
+            },
+            name     => 'object_construction',
+            frame    => \@caller,
+            scaffold => 1,
+        )
+    );
 
     my $modify_code_attributes = sub {
         my ( undef, $code, @attrs ) = @_;
 
         my $name = B::svref_2object($code)->GV->NAME;
 
-        my ( $method, %options, @unhandled );
+        my ( $method, $class_method, %options, @unhandled );
 
         for (@attrs) {
             if ( $_ eq 'Test' ) {
@@ -42,17 +52,19 @@ sub import {
                 $options{scaffold} = 1;
             }
             elsif ( $_ eq 'BeforeAll' ) {
-                $method = 'add_setup';
+                $method            = 'add_setup';
                 $options{scaffold} = 1;
+                $class_method      = 1;
             }
             elsif ( $_ eq 'AfterAll' ) {
-                $method = 'add_teardown';
+                $method            = 'add_teardown';
                 $options{scaffold} = 1;
+                $class_method      = 1;
             }
-            elsif ( /^Skip(?:\((.+)\))?/ ) {
+            elsif (/^Skip(?:\((.+)\))?/) {
                 $options{skip} = $1 || $name;
             }
-            elsif ( /^Todo(?:\((.+)\))?/ ) {
+            elsif (/^Todo(?:\((.+)\))?/) {
                 $options{todo} = $1 || $name;
             }
             else {
@@ -62,7 +74,9 @@ sub import {
 
         if ($method) {
             my $task = Test2::Workflow::Task::Action->new(
-                code  => sub { $self->$code },
+                code => $class_method
+                ? sub { $caller[0]->$code }
+                : sub { shift->{xUnit}->$code },
                 frame => \@caller,
                 name  => $name,
                 %options,

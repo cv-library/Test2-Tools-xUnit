@@ -1,33 +1,46 @@
+package Hello;
+
 use Test2::Tools::xUnit;
 use Test2::V0;
+use Moo;
+
+my $package_variable;
 
 sub startup : BeforeAll {
+    my $class = shift;
+
+    $package_variable = 42;
+}
+
+sub shutdown : AfterAll {
+    undef $package_variable;
+}
+
+sub setup : BeforeEach {
     my $self = shift;
 
-    $self->{true}  = 1;
+    $self->{true} ||= 1;
     $self->{false} = 0;
 }
 
-sub shutdown : AfterAll {}
-
-sub setup : BeforeEach {}
-
 sub teardown : AfterEach {}
 
-sub hello_world : Test {
+sub check_instance_variable : Test {
     my $self = shift;
 
-    ok $self->{true};
+    ok $package_variable, 'pass';
+    is $self->{true}, 1, 'pass again';
 }
 
-sub hello_again_world : Test Skip {
+sub mutate_instance_variable : Test {
     my $self = shift;
 
-    ok $self->{true}, 'pass';
-    ok $self->{true}, 'pass again';
+    $self->{true}++;
+
+    is $self->{true}, 2;
 }
 
-sub hello_again_world_skip_with_reason : Test Skip(A Good Reason) {
+sub hello_again_world_skip_with_reason : Test {
     my $self = shift;
 
     ok $self->{true}, 'pass';
