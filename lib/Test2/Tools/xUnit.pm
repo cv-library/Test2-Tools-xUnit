@@ -49,13 +49,11 @@ sub import {
         sub { Test2::Workflow::Runner->new( task => $root->compile )->run } );
 
     # This sub will be called whenever the Perl interpreter hits a subroutine
-    # with attributes in our caller.  Let's hope the caller doesn't try to
-    # load two modules which pull this trick!
+    # with attributes in our caller.
     #
-    # This sub closes over $root so that it can add the actions, and @caller
-    # so that it knows which package it's in.
-    no strict 'refs';
-    *{"$caller[0]::MODIFY_CODE_ATTRIBUTES"} = sub {
+    # It closes over $root so that it can add the actions, and @caller so that
+    # it knows which package it's in.
+    my $modify_code_attributes = sub {
         my ( undef, $code, @attrs ) = @_;
 
         my $name = B::svref_2object($code)->GV->NAME;
@@ -120,6 +118,11 @@ sub import {
 
         return @unhandled;
     };
+
+    # Let's hope the caller doesn't try to load two modules which pull this
+    # trick!
+    no strict 'refs';
+    *{"$caller[0]::MODIFY_CODE_ATTRIBUTES"} = $modify_code_attributes;
 }
 
 1;
