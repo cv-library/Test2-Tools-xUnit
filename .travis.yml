@@ -12,10 +12,8 @@ perl:
     - "5.12"
     - "5.10"
 
-matrix:
-  include:
-    - perl: 5.26
-      env: COVERAGE=1
+install: cpanm -n --skip-satisfied Devel::Cover::Report::Coveralls Test2::V0
+script:
+    - PERL5OPT=-MDevel::Cover prove -lv t
 
-before_install:
-  - eval $(curl https://travis-perl.github.io/init) --auto
+after_success: cover -report coveralls -select_re ^lib/
