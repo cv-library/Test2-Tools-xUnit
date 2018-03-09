@@ -20,6 +20,8 @@ sub import {
     Test2::API::test2_stack->top->follow_up(
         sub { Test2::Workflow::Runner->new( task => $root->compile )->run } );
 
+    my $self = bless {}, $caller[0];
+
     my $modify_code_attributes = sub {
         my ( undef, $code, @attrs ) = @_;
 
@@ -60,7 +62,7 @@ sub import {
 
         if ($method) {
             my $task = Test2::Workflow::Task::Action->new(
-                code  => $code,
+                code  => sub { $self->$code },
                 frame => \@caller,
                 name  => $name,
                 %options,
