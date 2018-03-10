@@ -66,6 +66,30 @@ Test2::Tools::xUnit - Perl xUnit framework built on Test2::Workflow
 
 =head1 DESCRIPTION
 
+=head2 Test instance lifecycle
+
+Test2::Tools::xUnit creates a new object per test method, to promote
+isolation of tests.  The following tests both pass, regardless of the order
+in which they are called:
+
+ use Test2::Tools::xUnit;
+ use Test2::V0;
+
+ sub add_one_to_list : Test {
+     my $self = shift;
+     push @{$self->{list}}, "one";
+     is scalar @{$self->{list}}, 1, "list should have one element";
+ }
+
+ sub check_list_is_empty : Test {
+     is scalar @{shift->{list}}, 0, "list should be empty";
+ }
+
+ done_testing;
+
+This behaviour is shared with JUnit, but differs from xUnit implementations
+such as NUnit or L<Test::Class>.  For more discussion, see
+L<https://martinfowler.com/bliki/JunitNewInstance.html>
 
 =head1 COPYRIGHT AND LICENSE
 
