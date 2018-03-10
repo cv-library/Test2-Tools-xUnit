@@ -2,15 +2,7 @@ use Test2::V0;
 use Test2::API 'intercept';
 
 my $events = intercept {
-    eval <<'END';
-use Test2::Tools::xUnit;
-
-sub foo : Test {
-    ok(1, "pass");
-}
-
-done_testing;
-END
+    do "./t/fixtures/attribute-test.t";
 };
 
 is $events, array {
