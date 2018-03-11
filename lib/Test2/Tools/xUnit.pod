@@ -89,8 +89,8 @@ in which they are called:
 
  done_testing;
 
-This behaviour is shared with JUnit, but differs from xUnit implementations
-such as NUnit or L<Test::Class>.  For more discussion, see
+This behaviour is shared with JUnit, but differs from some other xUnit
+implementations such as NUnit or L<Test::Class>.  For more discussion, see
 L<https://martinfowler.com/bliki/JunitNewInstance.html>
 
 =head1 COPYRIGHT AND LICENSE
