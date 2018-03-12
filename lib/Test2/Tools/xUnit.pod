@@ -66,6 +66,36 @@ Test2::Tools::xUnit - Perl xUnit framework built on Test2::Workflow
 
 =head1 DESCRIPTION
 
+=head2 Lack of inheritance
+
+Note that your test classes should not inherit from Test2::Tools::xUnit;
+importing the module is enough to make the subroutine attributes work.
+
+This behaviour differs from L<Test::Class>, L<Test::Class::Moose> and
+older implementations of xUnit in other languages.
+
+=head2 Test instance construction
+
+If your test class has a 'new' method, it will be called to construct
+instances of the class.
+
+If no such method exists, Test2::Tools::xUnit will bless a hash into the
+calling package for you.  For example, this test passes:
+
+ package Foo;
+
+ use Test2::Tools::xUnit;
+ use Test2::V0;
+ use Scalar::Util qw(reftype blessed);
+
+ sub called_with_reference_to_blessed_hash : Test {
+     my $self = shift;
+     is blessed($self), 'Foo';
+     is reftype($self), 'HASH';
+ }
+
+ done_testing;
+
 =head2 Test instance lifecycle
 
 Test2::Tools::xUnit creates a new object per test method, to promote
@@ -92,6 +122,30 @@ in which they are called:
 This behaviour is shared with JUnit, but differs from some other xUnit
 implementations such as NUnit or L<Test::Class>.  For more discussion, see
 L<https://martinfowler.com/bliki/JunitNewInstance.html>
+
+=head2 Choice of object framework
+
+Test2::Tools::xUnit will work with your choice of Perl object system, or
+none.  Here is a fictitious example using Moo:
+
+ package Calculator::Test;
+
+ use Moo;
+ use Test2::Tools::xUnit;
+ use Test2::V0;
+ use Calculator;
+
+ has 'calc' => ( is => 'ro', default => sub { Calculator->new } );
+
+ sub addition : Test {
+     my $result = shift->calc->add(2, 2);
+     is $result, 4, "2 + 2 should equal 4";
+ }
+
+ done_testing;
+
+The C<default> value of the C<calc> attribute combines with the lifecycle
+described above to make a concise alternative to a C<BeforeEach> setup method.
 
 =head1 COPYRIGHT AND LICENSE
 
