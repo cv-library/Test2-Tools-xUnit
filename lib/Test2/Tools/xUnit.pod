@@ -177,7 +177,23 @@ reported and ignored.
 
 =item BeforeEach
 
-C<BeforeEach> methods will be run before each test method.
+C<BeforeEach> methods will be run before each test method.  They are invoked
+with the test instance as the first argument, so can store fixtures in the
+object:
+
+ sub before_each : BeforeEach {
+     my $self = shift;
+     $self->{srv} = Local::Service->new(
+         ua => $mock_ua,
+     );
+ }
+
+ sub test_the_service : Test {
+     my $self = shift;
+     my $res = $self->{srv}->run(foo => 'bar');
+
+     # ...make assertions about the response...
+ }
 
 =item AfterEach
 
@@ -202,7 +218,7 @@ you must take care to reset their state between each test; probably in an
 C<AfterEach> method.
 
 Because of the risk of breaking test isolation, C<BeforeAll> should be used
-sparingly.
+sparingly; if C<BeforeEach> would work, use that instead.
 
 =item AfterAll
 
