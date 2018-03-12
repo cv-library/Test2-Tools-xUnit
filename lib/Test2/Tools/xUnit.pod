@@ -70,6 +70,43 @@ Test2::Tools::xUnit - Perl xUnit framework built on Test2::Workflow
 
 =head1 DESCRIPTION
 
+Test2::Tools::xUnit is an implementation of xUnit for Perl that works with
+L<Test2>.  It uses subroutine attributes to indicate which methods should be
+called at which times.
+
+=head2 Integration with Test2
+
+Rather than needing a separate test runner, all Test2::Tools::xUnit tests
+will be run when C<done_testing> is seen.
+
+This allows you to choose to write your tests in multiple C<*.t> files, each
+with C<done_testing> at the end.
+
+Alternatively you could adopt a module structure to share compilation time
+across your tests, with an approach such as this:
+
+ # In t/lib/Local/FooBar/Test.pm
+ package Local::FooBar::Test;
+ use Test2::Tools::xUnit;
+
+ ...
+
+ 1;
+
+ # In t/run.t
+ use File::Find;
+ use Test2::Tools::Basic;
+
+ find({
+     wanted => sub {require},
+     no_chdir => 1,
+ }, './t/lib');
+
+ done_testing;
+
+Extending this example to support running individual test modules is left
+as an exercise for the reader.
+
 =head2 Randomization of test order
 
 Test methods within a class are called in a random order, to help avoid tests
@@ -86,7 +123,7 @@ importing the module is enough to make the subroutine attributes work.
 This behaviour differs from L<Test::Class>, L<Test::Class::Moose> and
 older implementations of xUnit in other languages.
 
-=head2 Test instance construction
+=head2 Default object constructor
 
 If your test class has a 'new' method, it will be called to construct
 instances of the class.
@@ -108,7 +145,7 @@ calling package for you.  For example, this test passes:
 
  done_testing;
 
-=head2 Test instance lifecycle
+=head2 Per-method test instance lifecycle
 
 Test2::Tools::xUnit creates a new object per test method, to promote
 isolation of tests.  The following tests both pass, regardless of the order
