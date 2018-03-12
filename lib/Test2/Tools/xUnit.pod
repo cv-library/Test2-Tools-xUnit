@@ -66,6 +66,14 @@ Test2::Tools::xUnit - Perl xUnit framework built on Test2::Workflow
 
 =head1 DESCRIPTION
 
+=head2 Randomization of test methods
+
+Test methods within a class are called in a random order, to help avoid tests
+accidentally depending on side-effects of other test methods.
+
+Note that if you use L<Test2::Plugin::SRand> (e.g. via L<Test2::V0>), then
+the random order will be dependent on the seed chosen.
+
 =head2 Lack of inheritance
 
 Note that your test classes should not inherit from Test2::Tools::xUnit;
@@ -146,6 +154,74 @@ none.  Here is a fictitious example using Moo:
 
 The C<default> value of the C<calc> attribute combines with the lifecycle
 described above to make a concise alternative to a C<BeforeEach> setup method.
+
+=head1 SUBROUTINE ATTRIBUTES
+
+=over
+
+=item Test
+
+C<Test> indicates that a method should be run as a test.
+
+Any number of assertions can be made within a test method.
+
+=item Skip
+
+C<Skip> will cause a test method not to be run, but it will be reported as
+"skipped" in the output.
+
+=item Todo
+
+C<Todo> will cause a test method to be run, but any failure will be
+reported and ignored.
+
+=item BeforeEach
+
+C<BeforeEach> methods will be run before each test method.
+
+=item AfterEach
+
+C<AfterEach> methods will be run after each test method.
+
+=item BeforeAll
+
+C<BeforeAll> methods will be run once before any tests are started; it runs
+as a class method before any test instances are constructed, so cannot
+modify any instance attributes.  It can, however, modify package variables,
+and these will be available to all tests:
+
+ my $dbh;
+
+ sub before_all : BeforeAll {
+     $dbh = DBI->connect(...);
+     # ...other db setup...
+ }
+
+This is useful for setting up expensive fixtures such as databases, although
+you must take care to reset their state between each test; probably in an
+C<AfterEach> method.
+
+Because of the risk of breaking test isolation, C<BeforeAll> should be used
+sparingly.
+
+=item AfterAll
+
+C<AfterAll> methods will be run after all tests in the class have completed.
+Similarly to C<BeforeAll>, this will be invoked as a class method.
+
+ sub after_all : AfterAll {
+     $dbh->disconnect;
+ }
+
+=back
+
+=head1 COMPATIBILITY
+
+Test2::Tools::xUnit might collide with other Perl modules which handle
+subroutine attributes, if both try to create MODIFY_CODE_ATTRIBUTES in the
+caller - see L<attributes>.
+
+Currently only Perl 5.12 and higher are supported.
 
 =head1 COPYRIGHT AND LICENSE
 
