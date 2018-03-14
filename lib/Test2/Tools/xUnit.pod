@@ -74,6 +74,10 @@ Test2::Tools::xUnit is an implementation of xUnit for Perl that works with
 L<Test2>.  It uses subroutine attributes to indicate which methods should be
 called at which times.
 
+By constructing a separate object per test, and randomizing the order in
+which the tests are called, Test2::Tools::xUnit attempts to provide strong
+isolation between test methods.
+
 =head1 SUBROUTINE ATTRIBUTES
 
 =over
@@ -294,11 +298,10 @@ When failures occur, it helps to have clearly-named tests, to tell you
 unambiguously what has gone wrong.
 
 For example, the following failure could be misread as saying an exception
-was thrown unexpectedly - in fact you need to be finding out why an exception
-was not thrown:
+was thrown unexpectedly:
 
  not ok 1 - square_root_of_negative_square {
-     not ok 1 - throws exception with error message
+     not ok 1 - throws an exception
      1..1
  }
 
