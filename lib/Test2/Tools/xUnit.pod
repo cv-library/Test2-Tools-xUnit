@@ -28,21 +28,21 @@ Test2::Tools::xUnit - Perl xUnit framework built on Test2::Workflow
 
  # Tests are indicated with the :Test attribute.  You can make multiple
  # assertions per test if desired.  Each method is called on a new instance.
- sub run_without_args_should_return_true : Test {
+ sub run_without_args : Test {
     my $self = shift;
-    ok $self->{sys}->run, 'run should return true';
+    ok $self->{sys}->run, 'should return true';
  }
 
  # Skip tests if you don't want them to be run.
- sub skip_test : Test Skip(unwanted side effects) {
+ sub self_destruct : Test Skip(unwanted side effects) {
     my $self = shift;
-    ok !lives { $self->{sys}->self_destruct() }, "self destruct should die";
+    ok !lives { $self->{sys}->self_destruct() }, "should die";
  }
 
  # Todo tests will be run; failures are reported and ignored.
- sub todo_test : Test Todo(not yet implemented) {
+ sub frobnicate : Test Todo(not yet implemented) {
     my $self = shift;
-    is $self->{sys}->frobnicate(), 42, 'frobnicate should return 42';
+    is $self->{sys}->frobnicate(), 42, 'should return 42';
  }
 
  # BeforeEach/AfterEach are called once per test method, on an instance.
@@ -74,38 +74,94 @@ Test2::Tools::xUnit is an implementation of xUnit for Perl that works with
 L<Test2>.  It uses subroutine attributes to indicate which methods should be
 called at which times.
 
+=head1 SUBROUTINE ATTRIBUTES
+
+=over
+
+=item Test
+
+C<Test> indicates that a method should be run as a test.
+
+Any number of assertions can be made within a test method.
+
+=item Skip(<reason>)
+
+C<Skip> will cause a test method not to be run, but it will be reported as
+"skipped" in the output.
+
+If omitted, the reason defaults to the name of the test method.
+
+=item Todo(<reason>)
+
+C<Todo> will cause a test method to be run, but any failure will be
+reported and ignored.
+
+If omitted, the reason defaults to the name of the test method.
+
+=item BeforeEach
+
+C<BeforeEach> methods will be run before each test method.  They are invoked
+with the test instance as the first argument, so can store fixtures in the
+object:
+
+ sub before_each : BeforeEach {
+     my $self = shift;
+     $self->{srv} = Local::Service->new(
+         ua => $mock_ua,
+     );
+ }
+
+ sub service_run_with_foo_bar : Test {
+     my $self = shift;
+     my $res = $self->{srv}->run(foo => 'bar');
+
+     # ...make assertions about the response...
+ }
+
+=item AfterEach
+
+C<AfterEach> methods will be run after each test method.
+
+=item BeforeAll
+
+C<BeforeAll> methods will be run once before any tests are started; it runs
+as a class method before any test instances are constructed, so cannot
+modify any instance attributes.  It can, however, modify package variables,
+and these will be available to all tests:
+
+ my $dbh;
+
+ sub before_all : BeforeAll {
+     $dbh = DBI->connect(...);
+     # ...other db setup...
+ }
+
+This is useful for setting up expensive fixtures such as databases, although
+you must take care to reset their state between each test; probably in an
+C<AfterEach> method.
+
+Because of the risk of breaking test isolation, C<BeforeAll> should be used
+sparingly; if C<BeforeEach> would work, use that instead.
+
+=item AfterAll
+
+C<AfterAll> methods will be run after all tests in the class have completed.
+Similarly to C<BeforeAll>, this will be invoked as a class method.
+
+ sub after_all : AfterAll {
+     $dbh->disconnect;
+ }
+
+=back
+
+=head1 FEATURES
+
 =head2 Integration with Test2
 
 Rather than needing a separate test runner, all Test2::Tools::xUnit tests
 will be run when C<done_testing> is seen.
 
-This allows you to choose to write your tests in multiple C<*.t> files, each
-with C<done_testing> at the end.
-
-Alternatively you could adopt a module structure to share compilation time
-across your tests, with an approach such as this:
-
- # In t/lib/Local/FooBar/Test.pm
- package Local::FooBar::Test;
- use Test2::Tools::xUnit;
-
- ...
-
- 1;
-
- # In t/run.t
- use File::Find;
- use Test2::Tools::Basic;
-
- find({
-     wanted => sub {require},
-     no_chdir => 1,
- }, './t/lib');
-
- done_testing;
-
-Extending this example to support running individual test modules is left
-as an exercise for the reader.
+Each test method creates a Test2 Subtest.
 
 =head2 Randomization of test order
 
@@ -196,85 +252,94 @@ none.  Here is a fictitious example using Moo:
 The C<default> value of the C<calc> attribute combines with the lifecycle
 described above to make a concise alternative to a C<BeforeEach> setup method.
 
-=head1 SUBROUTINE ATTRIBUTES
+=head1 TESTING ADVICE
 
-=over
+Entire books have been written on testing; we cannot reproduce all their
+advice here.  However, here are some brief guidelines that might be
+relevant specifically to xUnit.
 
-=item Test
+=head2 One test method per behaviour
 
-C<Test> indicates that a method should be run as a test.
+Avoid naming test methods after the function they are testing, and then
+attempting to test all the behaviours in that one method.  You should write
+one test method per behaviour.
 
-Any number of assertions can be made within a test method.
+This guideline doesn't stop you having multiple assertions per behaviour, or
+using table-driven tests as in this example:
 
-=item Skip(<reason>)
+ use Test2::Tools::xUnit;
+ use Test2::V0;
 
-C<Skip> will cause a test method not to be run, but it will be reported as
-"skipped" in the output.
-
-If omitted, the reason defaults to the name of the test method.
-
-=item Todo(<reason>)
-
-C<Todo> will cause a test method to be run, but any failure will be
-reported and ignored.
-
-If omitted, the reason defaults to the name of the test method.
-
-=item BeforeEach
-
-C<BeforeEach> methods will be run before each test method.  They are invoked
-with the test instance as the first argument, so can store fixtures in the
-object:
-
- sub before_each : BeforeEach {
-     my $self = shift;
-     $self->{srv} = Local::Service->new(
-         ua => $mock_ua,
-     );
+ sub square_root_of_perfect_square : Test {
+     my %squares = ( 0 => 0, 1 => 1, 4 => 2, 9 => 3 );
+     while (my ($square, $root) = each %squares) {
+         my $result = sqrt(4);
+         is $result, 2, "should return $root as root of $square";
+     }
  }
 
- sub test_the_service : Test {
-     my $self = shift;
-     my $res = $self->{srv}->run(foo => 'bar');
-
-     # ...make assertions about the response...
+ sub square_root_of_negative_square : Test {
+     my $result = dies { sqrt(-4) };
+     is $result, qr/^Can't take sqrt of -4/, "should throw an exception";
  }
 
-=item AfterEach
+ done_testing;
 
-C<AfterEach> methods will be run after each test method.
+Negative numbers were treated as a separate behaviour here, rather than
+attempting to represent the exception as part of the C<%squares> hash.
 
-=item BeforeAll
+=head2 Test naming
 
-C<BeforeAll> methods will be run once before any tests are started; it runs
-as a class method before any test instances are constructed, so cannot
-modify any instance attributes.  It can, however, modify package variables,
-and these will be available to all tests:
+When failures occur, it helps to have clearly-named tests, to tell you
+unambiguously what has gone wrong.
 
- my $dbh;
+For example, the following failure could be misread as saying an exception
+was thrown unexpectedly - in fact you need to be finding out why an exception
+was not thrown:
 
- sub before_all : BeforeAll {
-     $dbh = DBI->connect(...);
-     # ...other db setup...
+ not ok 1 - square_root_of_negative_square {
+     not ok 1 - throws exception with error message
+     1..1
  }
 
-This is useful for setting up expensive fixtures such as databases, although
-you must take care to reset their state between each test; probably in an
-C<AfterEach> method.
+Try to include both the test condition and the expected behaviour in your
+test names, and to make use of the word "should" somewhere too.
 
-Because of the risk of breaking test isolation, C<BeforeAll> should be used
-sparingly; if C<BeforeEach> would work, use that instead.
+This produces output which is harder to misread:
 
-=item AfterAll
-
-C<AfterAll> methods will be run after all tests in the class have completed.
-Similarly to C<BeforeAll>, this will be invoked as a class method.
-
- sub after_all : AfterAll {
-     $dbh->disconnect;
+ not ok 1 - square_root_of_negative_square {
+     not ok 1 - should throw an exception
+     1..1
  }
 
-=back
+=head2 If you prefer to use many test classes
+
+Test2::Tools::xUnit will work with multiple C<*.t> files, each with
+C<done_testing> at the end.  However, some people prefer to adopt a module
+structure to share compilation time across your tests, with an approach such
+as this:
+
+ # In t/lib/Local/FooBar/Test.pm
+ package Local::FooBar::Test;
+ use Test2::Tools::xUnit;
+
+ ...
+
+ 1;
+
+ # In t/run.t
+ use File::Find;
+ use Test2::Tools::Basic;
+
+ find({
+     wanted => sub {require},
+     no_chdir => 1,
+ }, './t/lib');
+
+ done_testing;
+
+Extending this example to support running individual test modules is left
+as an exercise for the reader.
 
 =head1 COMPATIBILITY
 
