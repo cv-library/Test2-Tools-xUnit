@@ -277,8 +277,8 @@ using table-driven tests as in this example:
  sub square_root_of_perfect_square : Test {
      my %squares = ( 0 => 0, 1 => 1, 4 => 2, 9 => 3 );
      while (my ($square, $root) = each %squares) {
-         my $result = sqrt(4);
-         is $result, 2, "should return $root as root of $square";
+         my $result = sqrt($square);
+         is $result, $root, "should return $root as root of $square";
      }
  }
 
