@@ -29,14 +29,13 @@ sub import {
     # Each coderef is called with the Test2::Workflow::Runner as the first
     # argument.  We abuse this so that we can pass the same instance variable
     # to the setup, test and teardown methods.
+    my $constructor
+        = $caller[0]->can('new')
+        ? sub { shift->{xUnit} = $caller[0]->new }
+        : sub { shift->{xUnit} = bless {}, $caller[0] };
     $root->add_primary_setup(
         Test2::Workflow::Task::Action->new(
-            code => sub {
-                shift->{xUnit}
-                    = $caller[0]->can('new')
-                    ? $caller[0]->new
-                    : bless {}, $caller[0];
-            },
+            code     => $constructor,
             name     => 'object_construction',
             frame    => \@caller,
             scaffold => 1,
