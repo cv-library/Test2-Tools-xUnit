@@ -1,4 +1,4 @@
-package Test2::Tools::xUnit 0.002;
+package Test2::Tools::xUnit 0.003;
 
 use strict;
 use warnings;
