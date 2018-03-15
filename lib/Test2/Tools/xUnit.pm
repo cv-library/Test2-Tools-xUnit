@@ -91,9 +91,11 @@ sub import {
             # We default to the name of the current method if no reason is
             # given for Skip/Todo.
             elsif (/^Skip(?:\((.+)\))?/) {
+                $method = 'add_primary';
                 $options{skip} = $1 || $name;
             }
             elsif (/^Todo(?:\((.+)\))?/) {
+                $method = 'add_primary';
                 $options{todo} = $1 || $name;
             }
             # All unhandled attributes are returned for someone else to
