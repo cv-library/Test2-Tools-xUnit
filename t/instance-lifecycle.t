@@ -21,6 +21,7 @@ for (0..2) {
         event 'Plan';
         end;
     }, "Subtest $_ should contain one Ok event then a plan";
+    ok $events->[$_]->subevents->[0]->pass, "Assertion should pass";
 }
 
 done_testing;

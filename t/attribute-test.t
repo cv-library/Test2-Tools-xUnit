@@ -17,6 +17,6 @@ is $events->[0]->subevents, array {
     event 'Plan';
     end;
 }, 'Subtest should contain one Ok event then a plan';
-
+ok $events->[0]->subevents->[0]->pass, "Assertion should pass";
 
 done_testing;
