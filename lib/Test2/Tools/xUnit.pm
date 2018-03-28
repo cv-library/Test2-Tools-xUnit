@@ -1,6 +1,6 @@
 package Test2::Tools::xUnit 0.004;
 
-use strict;
+use v5.12;
 use warnings;
 
 use B;
