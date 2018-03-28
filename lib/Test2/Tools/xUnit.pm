@@ -129,7 +129,8 @@ sub import {
             # after we were imported. Note that SUPER won't work because it
             # finds the compile-time package of this sub.
             no strict 'refs';
-            my @parents = @{ $pkg . '::ISA' } || 'UNIVERSAL';
+            my @parents = @{ $pkg . '::ISA' };
+            @parents = 'UNIVERSAL' unless @parents;
             for my $parent (@parents) {
                 if ( my $subref = $parent->can('MODIFY_CODE_ATTRIBUTES') ) {
                     goto $subref;
