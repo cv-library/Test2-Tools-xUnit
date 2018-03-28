@@ -48,8 +48,7 @@ sub import {
     Test2::API::test2_stack->top->follow_up(
         sub { Test2::Workflow::Runner->new( task => $root->compile )->run } );
 
-    my $sub_name = "$caller[0]::MODIFY_CODE_ATTRIBUTES";
-    my $orig = do { no strict; defined &$sub_name ? \&$sub_name : undef };
+    my $orig = $caller[0]->can('MODIFY_CODE_ATTRIBUTES');
 
     # This sub will be called whenever the Perl interpreter hits a subroutine
     # with attributes in our caller.
@@ -132,7 +131,7 @@ sub import {
     no strict 'refs';
     no warnings 'redefine';
 
-    *$sub_name = $modify_code_attributes;
+    *{"$caller[0]::MODIFY_CODE_ATTRIBUTES"} = $modify_code_attributes;
 }
 
 1;
