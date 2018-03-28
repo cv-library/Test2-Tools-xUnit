@@ -48,13 +48,16 @@ sub import {
     Test2::API::test2_stack->top->follow_up(
         sub { Test2::Workflow::Runner->new( task => $root->compile )->run } );
 
+    my $sub_name = "$caller[0]::MODIFY_CODE_ATTRIBUTES";
+    my $orig = do { no strict; defined &$sub_name ? \&$sub_name : undef };
+
     # This sub will be called whenever the Perl interpreter hits a subroutine
     # with attributes in our caller.
     #
     # It closes over $root so that it can add the actions, and @caller so that
     # it knows which package it's in.
     my $modify_code_attributes = sub {
-        my ( undef, $code, @attrs ) = @_;
+        my ( $pkg, $code, @attrs ) = @_;
 
         my $name = B::svref_2object($code)->GV->NAME;
 
@@ -118,13 +121,18 @@ sub import {
             $root->$method($task);
         }
 
+        if ($orig) {
+            @_ = ( $pkg, $code, @unhandled );
+            goto $orig;
+        }
+
         return @unhandled;
     };
 
-    # Let's hope the caller doesn't try to load two modules which pull this
-    # trick!
     no strict 'refs';
-    *{"$caller[0]::MODIFY_CODE_ATTRIBUTES"} = $modify_code_attributes;
+    no warnings 'redefine';
+
+    *$sub_name = $modify_code_attributes;
 }
 
 1;
