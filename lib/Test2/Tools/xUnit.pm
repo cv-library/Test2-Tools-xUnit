@@ -120,9 +120,21 @@ sub import {
             $root->$method($task);
         }
 
+        @_ = ( $pkg, $code, @unhandled );
         if ($orig) {
-            @_ = ( $pkg, $code, @unhandled );
             goto $orig;
+        }
+        else {
+            # A package like Attribute::Handlers might have modified @ISA
+            # after we were imported. Note that SUPER won't work because it
+            # finds the compile-time package of this sub.
+            no strict 'refs';
+            my @parents = @{ $pkg . '::ISA' } || 'UNIVERSAL';
+            for my $parent (@parents) {
+                if ( my $subref = $parent->can('MODIFY_CODE_ATTRIBUTES') ) {
+                    goto $subref;
+                }
+            }
         }
 
         return @unhandled;
